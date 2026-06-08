@@ -1,0 +1,46 @@
+services:
+  # Backend API Service
+  - type: web
+    name: aicrm-api
+    env: java
+    buildCommand: ./mvnw -DskipTests clean package -Pproduction
+    startCommand: java -jar target/aicrm-0.0.1-SNAPSHOT.jar
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8086
+      - key: JAVA_OPTS
+        value: -Xmx512m -Xms256m
+      - key: DATABASE_URL
+        value: postgres://postgres:password@host:5432/aicrm
+      - key: DATABASE_USERNAME
+        value: postgres
+      - key: DATABASE_PASSWORD
+        value: your_database_password
+      - key: JPA_DDL_AUTO
+        value: update
+      - key: SHOW_SQL
+        value: false
+      - key: OLLAMA_MODEL
+        value: minimax-m2.5:cloud
+      - key: MAIL_USERNAME
+        value: your_email@gmail.com
+      - key: MAIL_PASSWORD
+        value: your_app_password
+      - key: JWT_SECRET
+        value: generate_a_secure_256_bit_key
+      - key: CORS_ORIGINS
+        value: https://your-frontend.vercel.app
+
+  # PostgreSQL Database
+  - type: psvc
+    name: aicrm-db
+    plan: free
+    postgresMajorVersion: "16"
+    envVars:
+      - key: POSTGRES_DB
+        value: aicrm
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        value: your_secure_password
