@@ -3,7 +3,7 @@ services:
   - type: web
     name: aicrm-api
     env: java
-    buildCommand: ./mvnw -DskipTests clean package -Pproduction
+    buildCommand: chmod +x mvnw && ./mvnw -DskipTests clean package -Pproduction
     startCommand: java -jar target/aicrm-0.0.1-SNAPSHOT.jar
     autoDeploy: true
     envVars:
