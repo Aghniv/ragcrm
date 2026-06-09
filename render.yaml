@@ -1,4 +1,10 @@
 services:
+  # PostgreSQL Database (must be first)
+  - type: psvc
+    name: aicrm-db
+    plan: free
+    postgresMajorVersion: "16"
+
   # Backend API Service
   - type: web
     name: aicrm-api
@@ -11,16 +17,12 @@ services:
         value: 8086
       - key: JAVA_OPTS
         value: -Xmx512m -Xms256m
-      - key: DATABASE_URL
-        value: postgres://postgres:password@host:5432/aicrm
-      - key: DATABASE_USERNAME
-        value: postgres
-      - key: DATABASE_PASSWORD
-        value: your_database_password
       - key: JPA_DDL_AUTO
         value: update
       - key: SHOW_SQL
         value: false
+      - key: OLLAMA_BASE_URL
+        value: https://api.ollama.com
       - key: OLLAMA_MODEL
         value: minimax-m2.5:cloud
       - key: MAIL_USERNAME
@@ -31,16 +33,3 @@ services:
         value: generate_a_secure_256_bit_key
       - key: CORS_ORIGINS
         value: https://your-frontend.vercel.app
-
-  # PostgreSQL Database
-  - type: psvc
-    name: aicrm-db
-    plan: free
-    postgresMajorVersion: "16"
-    envVars:
-      - key: POSTGRES_DB
-        value: aicrm
-      - key: POSTGRES_USER
-        value: postgres
-      - key: POSTGRES_PASSWORD
-        value: your_secure_password
