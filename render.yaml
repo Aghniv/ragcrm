@@ -1,10 +1,4 @@
 services:
-  # PostgreSQL Database (must be first)
-  - type: postgres
-    name: aicrm-db
-    plan: free
-    postgresMajorVersion: "16"
-
   # Backend API Service
   - type: web
     name: aicrm-api
