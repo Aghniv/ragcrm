@@ -1,6 +1,6 @@
 services:
   # PostgreSQL Database (must be first)
-  - type: psql
+  - type: postgres
     name: aicrm-db
     plan: free
     postgresMajorVersion: "16"
