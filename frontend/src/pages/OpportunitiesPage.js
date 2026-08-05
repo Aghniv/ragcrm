@@ -7,15 +7,6 @@ import { Eye, Trash2 } from 'lucide-react';
 
 const STAGES = ['PROSPECTING', 'QUALIFICATION', 'PROPOSAL', 'NEGOTIATION', 'WON', 'LOST'];
 
-const STAGE_COLORS = {
-  PROSPECTING: '#3b82f6',
-  QUALIFICATION: '#10b981',
-  PROPOSAL: '#8b5cf6',
-  NEGOTIATION: '#f59e0b',
-  WON: '#059669',
-  LOST: '#f43f5e',
-};
-
 function OpportunitiesPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();

@@ -7,7 +7,6 @@ import {
   Sparkles,
   TrendingUp,
   Bot,
-  ShieldCheck,
 } from 'lucide-react';
 import '../styles/Auth.css';
 

@@ -7,7 +7,7 @@ import BerryCard from '../components/BerryCard';
 import StatCard from '../components/StatCard';
 import {
   Users, UserPlus, Phone, CheckCircle, FileText, Trophy, XCircle,
-  Plus, List, Lightbulb, TrendingUp, Clock, Search, Briefcase, ListChecks,
+  Plus, Lightbulb, Clock, Search, Briefcase, ListChecks,
   StickyNote, Building2, Contact, Sparkles
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';

@@ -4,7 +4,7 @@ Drop your UI screenshots into this folder using these filenames (or rename yours
 
 | Filename | Where it's referenced |
 |---|---|
-| `dashboard.png` | Dashboard card on the README |
+| `ragdash.png` | Dashboard card on the README |
 | `leads.png` | Leads list card |
 | `ai-tools.png` | AI Tools tab (lead detail) |
 | `pipeline.png` | Opportunities / Pipeline view |
