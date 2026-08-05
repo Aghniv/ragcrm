@@ -10,17 +10,8 @@ A modern, multi-tenant AI-powered CRM for sales teams. AuraCRM helps you manage 
 
 ## Screenshots
 
-Drop your screenshots into `docs/screenshots/` and they'll show up below. Filenames referenced below are suggestions — rename yours to match.
-
-| Dashboard | Leads | AI Tools |
-| :---: | :---: | :---: |
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Leads](docs/screenshots/leads.png) | ![AI Tools](docs/screenshots/ai-tools.png) |
-
-| Pipeline | Ask AI (RAG) | Customer detail |
-| :---: | :---: | :---: |
-| ![Pipeline](docs/screenshots/pipeline.png) | ![Ask AI](docs/screenshots/ask-ai.png) | ![Customer detail](docs/screenshots/customer.png) |
-
-> Add more screenshots at the bottom of this file as your UI grows.
+![image alt](https://github.com/Aghniv/ragcrm/blob/c66edf3612e673f7c2f9064761d78b7d89f113bc/docs/screenshots/ragdash.png)
+![image alt](https://github.com/Aghniv/ragcrm/blob/c66edf3612e673f7c2f9064761d78b7d89f113bc/docs/screenshots/ragreg.png)
 
 ---
 
