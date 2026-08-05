@@ -1,28 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
+import { useLocation } from 'react-router-dom';
 import { leadAPI } from '../services/api';
 import { toast } from 'react-toastify';
 import SearchBar from '../components/SearchBar';
 import PaginationControls from '../components/PaginationControls';
 import ConfirmModal from '../components/ConfirmModal';
 import { SkeletonTable } from '../components/SkeletonLoader';
+import { Eye, Sparkles, Pencil, Trash2 } from 'lucide-react';
 
 const STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'WON', 'LOST'];
 
 function StatusBadge({ status }) {
   const colors = {
-    NEW: '#4285f4',
-    CONTACTED: '#fbbc04',
-    QUALIFIED: '#34a853',
-    PROPOSAL: '#9334e6',
-    WON: '#0d652d',
-    LOST: '#ea4335',
+    NEW: '#3b82f6',
+    CONTACTED: '#f59e0b',
+    QUALIFIED: '#10b981',
+    PROPOSAL: '#8b5cf6',
+    WON: '#059669',
+    LOST: '#f43f5e',
   };
 
   return (
     <span
       className="status-badge"
-      style={{ backgroundColor: colors[status] || '#666' }}
+      style={{ backgroundColor: colors[status] || '#636b88' }}
       role="status"
       aria-label={`Status: ${status}`}
     >
@@ -35,9 +37,9 @@ function ScoreBadge({ score }) {
   if (!score) return <span className="score-badge none">Not analyzed</span>;
 
   const getColor = (s) => {
-    if (s >= 70) return '#34a853';
-    if (s >= 40) return '#fbbc04';
-    return '#ea4335';
+    if (s >= 70) return '#10b981';
+    if (s >= 40) return '#f59e0b';
+    return '#f43f5e';
   };
 
   return (
@@ -49,9 +51,9 @@ function ScoreBadge({ score }) {
 
 function UrgencyBadge({ urgency }) {
   const colors = {
-    LOW: '#9e9e9e',
-    MEDIUM: '#f57c00',
-    HIGH: '#d32f2f',
+    LOW: '#636b88',
+    MEDIUM: '#f59e0b',
+    HIGH: '#f43f5e',
   };
 
   if (!urgency) return null;
@@ -69,11 +71,16 @@ function UrgencyBadge({ urgency }) {
 }
 
 function LeadsPage() {
+  const location = useLocation();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState(() => {
+    // Honor ?status=NEW|CONTACTED|... from dashboard quick-action links.
+    const params = new URLSearchParams(window.location.search);
+    return params.get('status') || '';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize] = useState(20);
@@ -113,9 +120,9 @@ function LeadsPage() {
         sortDirection,
       };
 
-      const response = await leadAPI.getAll(params);
-      setLeads(response.data.content || response.data);
-      setTotalLeads(response.data.totalElements || response.data.length);
+      const response = await leadAPI.list(params);
+      setLeads(response.data.content || response.data || []);
+      setTotalLeads(response.data.totalElements ?? (response.data?.length ?? 0));
     } catch (error) {
       console.error('Error loading leads:', error);
       toast.error('Failed to load leads');
@@ -128,15 +135,20 @@ function LeadsPage() {
     loadLeads();
   }, [loadLeads]);
 
-  // Check URL for action=new to open modal automatically
+  // React to dashboard quick-action links: ?action=new opens the create modal,
+  // ?status=… seeds the status filter. Re-runs whenever the URL search string
+  // changes (e.g. user navigates from another dashboard shortcut).
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('action') === 'new') {
-      openNewModal();
-      // Clear the URL parameter
-      window.history.replaceState({}, '', '/leads');
+    const params = new URLSearchParams(location.search);
+    const status = params.get('status');
+    if (status && STATUSES.includes(status)) {
+      setFilterStatus(status);
+      setCurrentPage(0);
     }
-  }, []);
+    if (params.get('action') === 'new') {
+      setShowModal(true);
+    }
+  }, [location.search]);
 
   const onSubmit = async (data) => {
     try {
@@ -178,7 +190,7 @@ function LeadsPage() {
   const confirmDelete = async () => {
     if (!leadToDelete) return;
     try {
-      await leadAPI.delete(leadToDelete.id);
+      await leadAPI.remove(leadToDelete.id);
       toast.success('Lead deleted successfully!');
       setShowDeleteConfirm(false);
       setLeadToDelete(null);
@@ -214,11 +226,26 @@ function LeadsPage() {
     }
   };
 
-  const openNewModal = () => {
+  const openNewModal = useCallback(() => {
     setEditingLead(null);
-    reset();
+    // Reset the form. reset() is a no-op if the form hasn't mounted yet;
+    // useForm defaultValues are already correct, so if reset() is dropped,
+    // a fresh "Create" form is still empty.
+    try { reset(); } catch (_) { /* no-op */ }
     setShowModal(true);
-  };
+  }, [reset]);
+
+  // Auto-open modal when arriving from Dashboard's "Add Lead" quick action
+  // (/leads?action=new). We depend on location.search so re-navigating to the
+  // same URL with a fresh query string still triggers the modal.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('action') === 'new') {
+      openNewModal();
+      // Strip the query so a browser refresh doesn't reopen the modal.
+      window.history.replaceState({}, '', '/leads');
+    }
+  }, [location.search, openNewModal]);
 
   const totalPages = Math.ceil(totalLeads / pageSize);
 
@@ -230,7 +257,7 @@ function LeadsPage() {
             <h1 className="page-title">👥 Leads</h1>
             <p className="page-subtitle">Manage your sales leads</p>
           </div>
-          <button className="btn-primary" onClick={openNewModal} aria-label="Add new lead">
+          <button className="btn-add" onClick={openNewModal} aria-label="Add new lead">
             ➕ Add Lead
           </button>
         </div>
@@ -246,7 +273,12 @@ function LeadsPage() {
           <h1 className="page-title">👥 Leads</h1>
           <p className="page-subtitle">Manage your sales leads</p>
         </div>
-        <button className="btn-primary" onClick={openNewModal} aria-label="Add new lead">
+        <button
+          type="button"
+          className="btn-add"
+          onClick={openNewModal}
+          aria-label="Add new lead"
+        >
           ➕ Add Lead
         </button>
       </div>
@@ -317,18 +349,18 @@ function LeadsPage() {
                     <button
                       className="btn-action view"
                       onClick={() => handleViewDetail(lead.id)}
-                      title="View Details"
+                      title="View details"
                       aria-label={`View details for ${lead.name}`}
                     >
-                      👁️
+                      <Eye size={14} />
                     </button>
                     <button
                       className="btn-action analyze"
                       onClick={() => handleAnalyze(lead.id)}
-                      title="AI Analyze"
+                      title="AI analyze"
                       aria-label={`Analyze ${lead.name}`}
                     >
-                      🤖
+                      <Sparkles size={14} />
                     </button>
                     <button
                       className="btn-action edit"
@@ -336,15 +368,15 @@ function LeadsPage() {
                       title="Edit"
                       aria-label={`Edit ${lead.name}`}
                     >
-                      ✏️
+                      <Pencil size={14} />
                     </button>
                     <button
-                      className="btn-action delete"
+                      className="btn-action danger"
                       onClick={() => handleDeleteClick(lead)}
                       title="Delete"
                       aria-label={`Delete ${lead.name}`}
                     >
-                      🗑️
+                      <Trash2 size={14} />
                     </button>
                   </td>
                 </tr>
@@ -362,9 +394,19 @@ function LeadsPage() {
         />
       )}
 
+      {/* ---- CREATE / EDIT LEAD MODAL ---- */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)} role="dialog" aria-modal="true" aria-labelledby="modal-title">
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="crm-modal-overlay"
+          onClick={() => setShowModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
+          <div
+            className="crm-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h2 id="modal-title">{editingLead ? '✏️ Edit Lead' : '➕ New Lead'}</h2>
             <form onSubmit={handleSubmit(onSubmit)} noValidate>
               <div className="form-group">

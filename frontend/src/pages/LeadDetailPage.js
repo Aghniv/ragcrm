@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { leadAPI } from '../services/api';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { leadAPI, noteAPI, taskAPI } from '../services/api';
 import { toast } from 'react-toastify';
-import LeadAnalysisDisplay from '../components/LeadAnalysisDisplay';
-import ActivityTimeline from '../components/ActivityTimeline';
 import ConfirmModal from '../components/ConfirmModal';
 
 const STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'WON', 'LOST'];
@@ -28,13 +26,22 @@ function LeadDetailPage() {
     notes: '',
   });
 
+  // Notes + Tasks state
+  const [notes, setNotes] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [newNoteBody, setNewNoteBody] = useState('');
+  const [newTask, setNewTask] = useState({ title: '', dueAt: '', priority: 'MEDIUM' });
+
   useEffect(() => {
     loadLead();
+    loadNotes();
+    loadTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadLead = async () => {
     try {
-      const response = await leadAPI.getById(id);
+      const response = await leadAPI.get(id);
       setLead(response.data);
       setFormData({
         name: response.data.name,
@@ -54,6 +61,20 @@ function LeadDetailPage() {
     }
   };
 
+  const loadNotes = async () => {
+    try {
+      const res = await noteAPI.forEntity('lead', id);
+      setNotes(Array.isArray(res.data) ? res.data : res.data?.content || []);
+    } catch (e) { /* swallow — non-critical */ }
+  };
+
+  const loadTasks = async () => {
+    try {
+      const res = await taskAPI.forEntity('lead', id);
+      setTasks(Array.isArray(res.data) ? res.data : res.data?.content || []);
+    } catch (e) { /* swallow */ }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     try {
@@ -62,7 +83,6 @@ function LeadDetailPage() {
       setIsEditMode(false);
       toast.success('Lead updated successfully!');
     } catch (error) {
-      console.error('Error updating lead:', error);
       toast.error('Failed to update lead');
     }
   };
@@ -74,7 +94,6 @@ function LeadDetailPage() {
       toast.success('Lead analyzed successfully!');
       loadLead();
     } catch (error) {
-      console.error('Error analyzing lead:', error);
       toast.error('Failed to analyze lead');
     } finally {
       setIsAnalyzing(false);
@@ -83,11 +102,10 @@ function LeadDetailPage() {
 
   const handleDelete = async () => {
     try {
-      await leadAPI.delete(id);
+      await leadAPI.remove(id);
       toast.success('Lead deleted successfully!');
       navigate('/leads');
     } catch (error) {
-      console.error('Error deleting lead:', error);
       toast.error('Failed to delete lead');
     }
   };
@@ -103,6 +121,40 @@ function LeadDetailPage() {
       status: lead.status,
       notes: lead.notes || '',
     });
+  };
+
+  const handleAddNote = async () => {
+    if (!newNoteBody.trim()) return;
+    try {
+      await noteAPI.create({
+        entityType: 'lead',
+        entityId: Number(id),
+        body: newNoteBody,
+      });
+      setNewNoteBody('');
+      loadNotes();
+      toast.success('Note added');
+    } catch (error) {
+      toast.error('Failed to add note');
+    }
+  };
+
+  const handleAddTask = async () => {
+    if (!newTask.title.trim()) return;
+    try {
+      await taskAPI.create({
+        title: newTask.title,
+        relatedType: 'lead',
+        relatedId: Number(id),
+        dueAt: newTask.dueAt || null,
+        priority: newTask.priority,
+      });
+      setNewTask({ title: '', dueAt: '', priority: 'MEDIUM' });
+      loadTasks();
+      toast.success('Task added');
+    } catch (error) {
+      toast.error('Failed to add task');
+    }
   };
 
   if (loading) {
@@ -121,13 +173,13 @@ function LeadDetailPage() {
           <p className="lead-email">{lead.email}</p>
         </div>
         <div className="header-actions">
-          <button 
+          <button
             className="btn-primary"
             onClick={() => setIsEditMode(!isEditMode)}
           >
             {isEditMode ? '❌ Cancel' : '✏️ Edit'}
           </button>
-          <button 
+          <button
             className="btn-danger"
             onClick={() => setShowDeleteConfirm(true)}
           >
@@ -144,10 +196,22 @@ function LeadDetailPage() {
           Overview
         </button>
         <button
-          className={`tab-button ${activeTab === 'activity' ? 'active' : ''}`}
-          onClick={() => setActiveTab('activity')}
+          className={`tab-button ${activeTab === 'ai' ? 'active' : ''}`}
+          onClick={() => setActiveTab('ai')}
         >
-          Activity
+          🤖 AI Tools
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'notes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('notes')}
+        >
+          📝 Notes ({notes.length})
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'tasks' ? 'active' : ''}`}
+          onClick={() => setActiveTab('tasks')}
+        >
+          ✅ Tasks ({tasks.length})
         </button>
       </div>
 
@@ -175,22 +239,24 @@ function LeadDetailPage() {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Phone</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                />
-              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Phone</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  />
+                </div>
 
-              <div className="form-group">
-                <label>Company</label>
-                <input
-                  type="text"
-                  value={formData.company}
-                  onChange={(e) => setFormData({...formData, company: e.target.value})}
-                />
+                <div className="form-group">
+                  <label>Company</label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => setFormData({...formData, company: e.target.value})}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -265,12 +331,12 @@ function LeadDetailPage() {
                   <label>Status</label>
                   <div className="status-badge" style={{
                     backgroundColor: {
-                      'NEW': '#4285f4',
-                      'CONTACTED': '#fbbc04',
-                      'QUALIFIED': '#34a853',
-                      'PROPOSAL': '#9334e6',
-                      'WON': '#0d652d',
-                      'LOST': '#ea4335',
+                      'NEW': '#3b82f6',
+                      'CONTACTED': '#f59e0b',
+                      'QUALIFIED': '#10b981',
+                      'PROPOSAL': '#8b5cf6',
+                      'WON': '#059669',
+                      'LOST': '#f43f5e',
                     }[lead.status]
                   }}>
                     {lead.status}
@@ -285,27 +351,146 @@ function LeadDetailPage() {
                   <div>{new Date(lead.updatedAt).toLocaleDateString()}</div>
                 </div>
               </div>
-
-              <div className="lead-info-section">
-                <h2>Notes</h2>
-                <div className="notes-content">
-                  {lead.notes || 'No notes added'}
-                </div>
-              </div>
             </div>
           )}
-
-          <LeadAnalysisDisplay
-            lead={lead}
-            onAnalyze={handleAnalyze}
-            isAnalyzing={isAnalyzing}
-          />
         </div>
       )}
 
-      {activeTab === 'activity' && (
+      {activeTab === 'ai' && (
         <div className="lead-detail-content">
-          <ActivityTimeline lead={lead} />
+          <div className="lead-info-section">
+            <h2>🤖 AI Tools</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              Analyze this lead's profile status, urgency, and generate a quality score.
+            </p>
+
+            <div className="form-actions" style={{ flexDirection: 'column', gap: '16px', alignItems: 'stretch' }}>
+              <button
+                className="btn-primary"
+                onClick={handleAnalyze}
+                disabled={isAnalyzing}
+              >
+                {isAnalyzing ? '🔄 Analyzing...' : (lead.score ? '🔄 Re-analyze Lead' : '🤖 Analyze Lead')}
+              </button>
+
+              {lead.score && (
+                <div className="analysis-results" style={{ padding: '16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '10px' }}>
+                  <div className="info-item" style={{ marginBottom: '16px' }}>
+                    <label>Score</label>
+                    <div style={{ fontSize: '24px', fontWeight: '800', color: lead.score >= 70 ? 'var(--accent-emerald)' : lead.score >= 40 ? 'var(--accent-amber)' : 'var(--accent-rose)' }}>{lead.score}/100</div>
+                  </div>
+                  <div className="info-item" style={{ marginBottom: '16px' }}>
+                    <label>Urgency</label>
+                    <div style={{ display: 'inline-block' }} className="urgency-badge">{lead.urgency}</div>
+                  </div>
+                  {lead.notes && (
+                    <div className="info-item">
+                      <label>AI Summary & Notes</label>
+                      <div style={{ color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{lead.notes}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Link to="/customers" className="btn-secondary" style={{ textAlign: 'center', display: 'block', textDecoration: 'none' }}>
+                Convert to Customer →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'notes' && (
+        <div className="lead-detail-content">
+          <div className="lead-info-section">
+            <h2>📝 Notes</h2>
+            <div className="form-group">
+              <textarea
+                value={newNoteBody}
+                onChange={(e) => setNewNoteBody(e.target.value)}
+                rows="3"
+                placeholder="Add a note about this lead..."
+              />
+              <button className="btn-primary" style={{ marginTop: '12px' }} onClick={handleAddNote}>
+                Add Note
+              </button>
+            </div>
+            <div style={{ marginTop: '24px' }}>
+              {notes.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)' }}>No notes yet</p>
+              ) : (
+                notes.map((n) => (
+                  <div key={n.id} style={{ padding: '14px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      {new Date(n.createdAt).toLocaleString()}
+                    </div>
+                    <div style={{ marginTop: '6px', color: 'var(--text-primary)' }}>{n.body}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'tasks' && (
+        <div className="lead-detail-content">
+          <div className="lead-info-section">
+            <h2>✅ Tasks</h2>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ flex: 2, marginBottom: 0 }}>
+                <label>Title</label>
+                <input
+                  type="text"
+                  value={newTask.title}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                  placeholder="Follow up next week"
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: '120px' }}>
+                <label>Due</label>
+                <input
+                  type="date"
+                  value={newTask.dueAt}
+                  onChange={(e) => setNewTask({ ...newTask, dueAt: e.target.value })}
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: '100px' }}>
+                <label>Priority</label>
+                <select
+                  value={newTask.priority}
+                  onChange={(e) => setNewTask({ ...newTask, priority: e.target.value })}
+                >
+                  <option>LOW</option>
+                  <option>MEDIUM</option>
+                  <option>HIGH</option>
+                </select>
+              </div>
+              <button className="btn-primary" onClick={handleAddTask} style={{ height: '42px', padding: '0 20px' }}>
+                Add
+              </button>
+            </div>
+
+            <div style={{ marginTop: '24px' }}>
+              {tasks.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)' }}>No tasks yet</p>
+              ) : (
+                tasks.map((t) => (
+                  <div key={t.id} style={{ padding: '14px 0', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{t.title}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                        {t.priority} • {t.dueAt ? `Due ${new Date(t.dueAt).toLocaleDateString()}` : 'No due date'}
+                      </div>
+                    </div>
+                    <span className="status-badge" style={{ backgroundColor: t.status === 'DONE' ? 'var(--accent-emerald)' : 'var(--accent-indigo)' }}>
+                      {t.status}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       )}
 

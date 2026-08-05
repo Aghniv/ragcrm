@@ -39,9 +39,42 @@ public class LeadAnalysisService {
                 lead.getNotes() != null ? lead.getNotes() : "None"
             );
 
-        String response = chatClient.prompt(prompt).call().content();
+        try {
+            String response = chatClient.prompt(prompt).call().content();
+            return parseResponse(response);
+        } catch (Exception e) {
+            // Local fallback values when AI model is offline status/refuses connection
+            int score = 40;
+            if (lead.getEmail() != null && !lead.getEmail().contains("@gmail.") && !lead.getEmail().contains("@yahoo.") && !lead.getEmail().contains("@outlook.")) {
+                score += 30; // corporate email benefit
+            } else {
+                score += 15;
+            }
+            if (lead.getPhone() != null && !lead.getPhone().isBlank()) {
+                score += 15;
+            }
+            if (lead.getCompany() != null && !lead.getCompany().isBlank()) {
+                score += 15;
+            }
+            if (score > 100) score = 100;
 
-        return parseResponse(response);
+            String urgency = "LOW";
+            String notesLc = (lead.getNotes() != null) ? lead.getNotes().toLowerCase() : "";
+            if (notesLc.contains("urgent") || notesLc.contains("now") || notesLc.contains("asap") || notesLc.contains("immediate")) {
+                urgency = "HIGH";
+            } else if (lead.getPhone() != null && !lead.getPhone().isBlank()) {
+                urgency = "MEDIUM";
+            }
+
+            String summary = String.format("Local Analysis (Offline Mode): Lead %s from %s evaluated with score %d. LLM service offline: %s",
+                lead.getName(),
+                lead.getCompany() != null ? lead.getCompany() : "Unknown Company",
+                score,
+                e.getMessage()
+            );
+
+            return new LeadAnalysisResult(score, urgency, summary);
+        }
     }
 
     private LeadAnalysisResult parseResponse(String response) {
@@ -63,7 +96,7 @@ public class LeadAnalysisService {
 
             return new LeadAnalysisResult(score, urgency, summary);
         } catch (Exception e) {
-            return new LeadAnalysisResult(50, "MEDIUM", "Analysis could not be completed");
+            return new LeadAnalysisResult(50, "MEDIUM", "Analysis could not be completed from AI response");
         }
     }
 }

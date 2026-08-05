@@ -5,15 +5,15 @@ import com.project.aicrm.dto.LeadRequest;
 import com.project.aicrm.entity.Lead;
 import com.project.aicrm.entity.LeadStatus;
 import com.project.aicrm.repository.LeadRepository;
+import com.project.aicrm.tenant.TenantContext;
+import com.project.aicrm.tenant.TenantSecurity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -23,28 +23,25 @@ public class LeadService {
 
     private final LeadRepository leadRepository;
     private final LeadAnalysisService analysisService;
-    private final EmailService emailService;
-    private final GoogleSheetsService sheetsService;
-    private final ActivityLogService activityLogService;
+    private final TenantSecurity tenantSecurity;
 
     public LeadService(LeadRepository leadRepository,
                        LeadAnalysisService analysisService,
-                       EmailService emailService,
-                       GoogleSheetsService sheetsService,
-                       ActivityLogService activityLogService) {
+                       TenantSecurity tenantSecurity) {
         this.leadRepository = leadRepository;
         this.analysisService = analysisService;
-        this.emailService = emailService;
-        this.sheetsService = sheetsService;
-        this.activityLogService = activityLogService;
+        this.tenantSecurity = tenantSecurity;
     }
 
     @Transactional
-    @CacheEvict(value = "leadStats", allEntries = true)
     public Lead createLead(LeadRequest request) {
-        logger.info("Creating new lead: {}", request.getEmail());
+        Long tenantId = TenantContext.require();
+        tenantSecurity.requireMemberOfCurrentTenant();
+
+        logger.info("Creating new lead in tenant {}: {}", tenantId, request.getEmail());
 
         Lead lead = new Lead();
+        lead.setTenantId(tenantId);
         lead.setName(request.getName());
         lead.setEmail(request.getEmail());
         lead.setPhone(request.getPhone());
@@ -54,131 +51,87 @@ public class LeadService {
         lead.setNotes(request.getNotes());
 
         Lead saved = leadRepository.save(lead);
-
-        // Log to Google Sheets
-        sheetsService.logLead(saved);
-
-        // Send confirmation email
-        emailService.sendLeadNotification(saved);
-
-        // Log activity
-        activityLogService.logActivity(saved.getId(), "CREATED", "Lead created from new lead form", null);
-
-        logger.info("Lead created with ID: {}", saved.getId());
+        logger.info("Lead created with ID: {} in tenant {}", saved.getId(), tenantId);
         return saved;
     }
 
     @Transactional(readOnly = true)
-    public List<Lead> getAllLeads() {
-        return leadRepository.findAll();
+    public Page<Lead> listLeads(String search, LeadStatus status, Pageable pageable) {
+        Long tenantId = TenantContext.require();
+        tenantSecurity.requireMemberOfCurrentTenant();
+
+        boolean hasSearch = search != null && !search.isBlank();
+        boolean hasStatus = status != null;
+
+        if (hasSearch && hasStatus) {
+            return leadRepository.searchByTenantAndStatus(tenantId, status, search, pageable);
+        }
+        if (hasSearch) {
+            return leadRepository.searchByTenant(tenantId, search, pageable);
+        }
+        if (hasStatus) {
+            return leadRepository.findByTenantIdAndStatus(tenantId, status, pageable);
+        }
+        return leadRepository.findByTenantId(tenantId, pageable);
     }
 
     @Transactional(readOnly = true)
     public Optional<Lead> getLeadById(Long id) {
-        return leadRepository.findById(id);
+        Long tenantId = TenantContext.require();
+        tenantSecurity.requireMemberOfCurrentTenant();
+        return leadRepository.findByIdAndTenantId(id, tenantId);
     }
 
     @Transactional
     public Lead updateLead(Long id, LeadRequest request) {
-        logger.info("Updating lead with ID: {}", id);
+        Long tenantId = TenantContext.require();
+        tenantSecurity.requireMemberOfCurrentTenant();
 
-        Lead lead = leadRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
+        Lead lead = leadRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found: " + id));
 
-        StringBuilder changes = new StringBuilder();
-        if (request.getName() != null && !request.getName().equals(lead.getName())) {
-            changes.append("name: ").append(lead.getName()).append(" -> ").append(request.getName()).append("; ");
+        if (request.getName() != null) {
             lead.setName(request.getName());
         }
-        if (request.getEmail() != null && !request.getEmail().equals(lead.getEmail())) {
-            changes.append("email: ").append(lead.getEmail()).append(" -> ").append(request.getEmail()).append("; ");
+        if (request.getEmail() != null) {
             lead.setEmail(request.getEmail());
         }
-        if (request.getPhone() != null && !request.getPhone().equals(lead.getPhone())) {
-            changes.append("phone: ").append(lead.getPhone()).append(" -> ").append(request.getPhone()).append("; ");
+        if (request.getPhone() != null) {
             lead.setPhone(request.getPhone());
         }
-        if (request.getCompany() != null && !request.getCompany().equals(lead.getCompany())) {
-            changes.append("company: ").append(lead.getCompany()).append(" -> ").append(request.getCompany()).append("; ");
+        if (request.getCompany() != null) {
             lead.setCompany(request.getCompany());
         }
-        if (request.getSource() != null && !request.getSource().equals(lead.getSource())) {
-            changes.append("source: ").append(lead.getSource()).append(" -> ").append(request.getSource()).append("; ");
+        if (request.getSource() != null) {
             lead.setSource(request.getSource());
         }
-        if (request.getStatus() != null && request.getStatus() != lead.getStatus()) {
-            changes.append("status: ").append(lead.getStatus()).append(" -> ").append(request.getStatus()).append("; ");
+        if (request.getStatus() != null) {
             lead.setStatus(request.getStatus());
         }
-        if (request.getNotes() != null && !request.getNotes().equals(lead.getNotes())) {
-            changes.append("notes updated; ");
+        if (request.getNotes() != null) {
             lead.setNotes(request.getNotes());
         }
 
-        Lead updated = leadRepository.save(lead);
-
-        // Log activity
-        if (changes.length() > 0) {
-            activityLogService.logActivity(id, "UPDATED", changes.toString(), null);
-        }
-
-        logger.info("Lead updated: {}", id);
-        return updated;
+        return leadRepository.save(lead);
     }
 
     @Transactional
     public void deleteLead(Long id) {
-        logger.info("Deleting lead with ID: {}", id);
-        if (!leadRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Lead not found with id: " + id);
-        }
-        leadRepository.deleteById(id);
+        Long tenantId = TenantContext.require();
+        tenantSecurity.requireMemberOfCurrentTenant();
 
-        // Log activity
-        activityLogService.logActivity(id, "DELETED", "Lead deleted", null);
-
-        logger.info("Lead deleted: {}", id);
-    }
-
-    @Transactional
-    public List<Lead> deleteLeadsBulk(List<Long> ids) {
-        logger.info("Bulk deleting {} leads", ids.size());
-        List<Lead> deletedLeads = leadRepository.findAllById(ids);
-        leadRepository.deleteAll(deletedLeads);
-
-        // Log activity for each deleted lead
-        for (Long id : ids) {
-            activityLogService.logActivity(id, "BULK_DELETED", "Lead deleted in bulk operation", null);
-        }
-
-        return deletedLeads;
-    }
-
-    @Transactional
-    public List<Lead> updateLeadsBulkStatus(List<Long> ids, LeadStatus status) {
-        logger.info("Bulk updating {} leads to status {}", ids.size(), status);
-        List<Lead> leads = leadRepository.findAllById(ids);
-
-        for (Lead lead : leads) {
-            lead.setStatus(status);
-        }
-
-        List<Lead> updated = leadRepository.saveAll(leads);
-
-        // Log activity
-        for (Lead lead : leads) {
-            activityLogService.logActivity(lead.getId(), "BULK_STATUS_CHANGE", "Status changed to " + status, null);
-        }
-
-        return updated;
+        Lead lead = leadRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found: " + id));
+        leadRepository.delete(lead);
     }
 
     @Transactional
     public Lead analyzeLead(Long id) {
-        logger.info("Analyzing lead with ID: {}", id);
+        Long tenantId = TenantContext.require();
+        tenantSecurity.requireMemberOfCurrentTenant();
 
-        Lead lead = leadRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Lead not found with id: " + id));
+        Lead lead = leadRepository.findByIdAndTenantId(id, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found: " + id));
 
         var result = analysisService.analyzeLead(lead);
         lead.setScore(result.getScore());
@@ -189,18 +142,6 @@ public class LeadService {
             lead.setNotes(lead.getNotes() + "\n\n" + result.getSummary());
         }
 
-        Lead analyzed = leadRepository.save(lead);
-
-        // Log activity
-        activityLogService.logActivity(id, "ANALYZED", "AI Analysis completed. Score: " + result.getScore() + ", Urgency: " + result.getUrgency(), null);
-
-        logger.info("Lead analyzed: {}, score: {}", id, result.getScore());
-        return analyzed;
-    }
-
-    @Transactional(readOnly = true)
-    @Cacheable(value = "leadStatuses", key = "#status.name()")
-    public List<Lead> getLeadsByStatus(LeadStatus status) {
-        return leadRepository.findByStatus(status);
+        return leadRepository.save(lead);
     }
 }

@@ -7,6 +7,13 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+leads_log.csv
+*.csv
+!src/main/resources/**/*.csv
+
 ### STS ###
 .apt_generated
 .classpath

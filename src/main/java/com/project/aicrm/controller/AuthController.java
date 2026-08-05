@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping({"/api/auth", "/auth"})
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
@@ -52,7 +52,7 @@ public class AuthController {
 
         user = userRepository.save(user);
 
-        String token = jwtUtil.generateToken(email, user.getId());
+        String token = jwtUtil.generateToken(email, user.getId(), user.getRole().name(), null);
 
         logger.info("New user registered: {}", email);
 
@@ -85,7 +85,7 @@ public class AuthController {
         user.setLastLoginAt(LocalDateTime.now());
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(email, user.getId());
+        String token = jwtUtil.generateToken(email, user.getId(), user.getRole().name(), null);
 
         logger.info("User logged in: {}", email);
 

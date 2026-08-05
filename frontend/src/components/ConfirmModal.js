@@ -2,7 +2,7 @@ import React from 'react';
 
 function ConfirmModal({ title, message, onConfirm, onCancel }) {
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="crm-modal-overlay" onClick={onCancel}>
       <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
         <h2>{title}</h2>
         <p>{message}</p>

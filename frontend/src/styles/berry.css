@@ -1,0 +1,130 @@
+/* ============================================================
+   Berry — Light admin theme (CodedThemes-inspired)
+   Imported at the top of index.css so all class styles pick up
+   the new CSS variables.
+   ============================================================ */
+
+:root {
+  /* Brand */
+  --primary: #5e35d1;
+  --primary-light: #7c4dff;
+  --primary-dark: #4527a0;
+  --primary-50: #ede7f6;
+  --primary-100: #d1c4e9;
+
+  /* Accents */
+  --secondary: #1a73e8;
+  --info: #29b6f6;
+  --success: #00a854;
+  --success-light: #e6f4ea;
+  --warning: #fbc02d;
+  --warning-light: #fff7e0;
+  --error: #ff4d4f;
+  --error-light: #ffe9e9;
+
+  /* Surfaces */
+  --bg-body: #fafbfb;
+  --bg-paper: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-hover: rgba(94, 53, 209, 0.06);
+  --bg-input: #ffffff;
+
+  /* Sidebar (always dark) */
+  --bg-sidebar: #394556;
+  --bg-sidebar-hover: #455264;
+  --bg-sidebar-active: #5e35d1;
+  --bg-sidebar-text: #ffffff;
+  --bg-sidebar-text-muted: #b0bec5;
+  --bg-sidebar-divider: rgba(255, 255, 255, 0.08);
+
+  /* Text */
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #9aa0b4;
+  --text-inverse: #ffffff;
+  --text-link: #5e35d1;
+
+  /* Borders */
+  --border: #e0e0e0;
+  --border-subtle: #f0f0f0;
+  --border-focus: #5e35d1;
+
+  /* Status badge hues (kept from previous theme) */
+  --status-new: #1a73e8;
+  --status-contacted: #f59e0b;
+  --status-qualified: #00a854;
+  --status-proposal: #7c4dff;
+  --status-won: #059669;
+  --status-lost: #ff4d4f;
+
+  /* Stage colors for opportunities */
+  --stage-prospecting: #1a73e8;
+  --stage-qualification: #00a854;
+  --stage-proposal: #7c4dff;
+  --stage-negotiation: #f59e0b;
+  --stage-won: #059669;
+  --stage-lost: #ff4d4f;
+
+  /* Radius */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* Shadows — softer, daylight shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(94, 53, 209, 0.18);
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --topbar-height: 64px;
+}
+
+/* ===== Backwards-compat aliases ===== */
+/*
+ * Several pages still reference the previous dark-theme variable names
+ * inline (e.g. `style={{ color: 'var(--accent-emerald)' }}`). Map them to
+ * the Berry equivalents so those styles don't silently lose color.
+ */
+:root {
+  --accent-indigo: var(--primary);
+  --accent-violet: var(--primary-light);
+  --accent-blue: var(--secondary);
+  --accent-emerald: var(--success);
+  --accent-amber: var(--warning);
+  --accent-rose: var(--error);
+  --accent-cyan: var(--info);
+
+  --bg-base: var(--bg-body);
+  --bg-elevated: var(--bg-paper);
+  --bg-card: var(--bg-paper);
+  --bg-input: var(--bg-input);
+  --bg-hover: var(--bg-hover);
+
+  --border-default: var(--border);
+  --border-subtle: var(--border-subtle);
+  --border-focus: var(--primary);
+
+  --text-primary: var(--text-primary);
+  --text-secondary: var(--text-secondary);
+  --text-muted: var(--text-muted);
+  --text-inverse: var(--text-inverse);
+
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  --gradient-hero: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  --gradient-card: linear-gradient(145deg, var(--bg-paper) 0%, var(--bg-body) 100%);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-glow: 0 0 20px rgba(94, 53, 209, 0.18);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}

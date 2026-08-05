@@ -1,15 +1,15 @@
-# Build stage
-FROM maven:3.9-eclipse-temurin-21 AS builder
-WORKDIR /app
-COPY mvnw ./
-COPY pom.xml ./
-COPY src ./src
-RUN chmod +x mvnw
-RUN ./mvnw -DskipTests clean package -Pproduction
 
-# Runtime stage
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jdk-alpine
+
+# Set the working directory inside the container
 WORKDIR /app
-COPY --from=builder /app/target/aicrm-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8086
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Copy the built jar file (Adjust path depending on Maven/Gradle)
+# Maven uses 'target/*.jar', Gradle uses 'build/libs/*.jar'
+COPY target/aicrm-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose the default Spring Boot port
+EXPOSE 8080
+
+# Command to execute the application
+CMD ["java", "-jar", "app.jar"]

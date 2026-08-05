@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8085/api';
+import { leadAPI } from '../services/api';
 
 function ContactPage() {
   const [loading, setLoading] = useState(false);
@@ -26,7 +24,7 @@ function ContactPage() {
   const onSubmit = async (data) => {
     setLoading(true);
     try {
-      await axios.post(`${API_BASE_URL}/leads`, data);
+      await leadAPI.create(data);
       toast.success('Thank you! Your message has been submitted. We will contact you soon.');
       reset();
     } catch (error) {

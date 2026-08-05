@@ -9,13 +9,17 @@ import java.time.LocalDateTime;
         @Index(name = "idx_lead_email", columnList = "email"),
         @Index(name = "idx_lead_company", columnList = "company"),
         @Index(name = "idx_lead_created_at", columnList = "createdAt"),
-        @Index(name = "idx_lead_status_created", columnList = "status, createdAt")
+        @Index(name = "idx_lead_status_created", columnList = "status, createdAt"),
+        @Index(name = "idx_lead_tenant", columnList = "tenant_id")
 })
 public class Lead {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
 
     @Column(nullable = false)
     private String name;
@@ -61,6 +65,8 @@ public class Lead {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getEmail() { return email; }
