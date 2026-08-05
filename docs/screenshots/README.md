@@ -1,14 +1,2 @@
-# Screenshots
-
-Drop your UI screenshots into this folder using these filenames (or rename yours to match):
-
-| Filename | Where it's referenced |
-|---|---|
-| `ragdash.png` | Dashboard card on the README |
-| `leads.png` | Leads list card |
-| `ai-tools.png` | AI Tools tab (lead detail) |
-| `pipeline.png` | Opportunities / Pipeline view |
-| `ask-ai.png` | RAG search results |
-| `customer.png` | Customer detail page |
-
-Recommended size: ~1280×800 PNG. If you want darker hero shots, capture the dashboard in dark mode and it'll match the rest of the README's tone.
+![image alt](https://github.com/Aghniv/ragcrm/blob/c66edf3612e673f7c2f9064761d78b7d89f113bc/docs/screenshots/ragdash.png)
+![image alt](https://github.com/Aghniv/ragcrm/blob/c66edf3612e673f7c2f9064761d78b7d89f113bc/docs/screenshots/ragreg.png)
