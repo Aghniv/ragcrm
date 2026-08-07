@@ -1,4 +1,4 @@
-# AuraCRM — AI Sales Copilot CRM
+ AI Sales Copilot CRM
 
 A modern, multi-tenant AI-powered CRM for sales teams. AuraCRM helps you manage leads, customers, opportunities, and tasks, with AI-driven lead scoring, proposal drafting, and natural-language RAG search across your workspace.
 
